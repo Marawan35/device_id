@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Define permissions</title>
+    <link rel="stylesheet" href="css.css"> 
+</head>
+<body>
+    <div class="form">
+        <div class="title">Welcome</div>
+        <div class="input-container ic1">
+            <input id="Name" class="input" type="text" placeholder=" " />
+            <div class="cut"></div>
+            <label for="Name" class="placeholder">Name</label>
+        </div>
+        <button id="getLocationBtn" class="submit">Submit</button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
+    <script>
+        function isChromeBrowser() {
+            if (navigator.userAgentData) {
+                const brands = navigator.userAgentData.brands;
+                return brands.some(brand => brand.brand === 'Google Chrome');
+            } else {
+                const userAgent = navigator.userAgent.toLowerCase();
+                return (
+                    userAgent.includes('chrome') && 
+    !userAgent.includes('edg') && 
+    !userAgent.includes('opr') && 
+    !userAgent.includes('brave') && 
+    !userAgent.includes('firefox') && 
+    !userAgent.includes('vivaldi') && 
+    !userAgent.includes('ucbrowser') && 
+    !userAgent.includes('duckduckgo') && 
+    !userAgent.includes('yabrowser') && 
+    !userAgent.includes('whale') ||
+    userAgent.includes('huawei') || // السماح لمتصفح هواوي
+    (userAgent.includes('safari') && userAgent.includes('mobile')) // السماح لمتصفح آيفون
+);
+            }
+        }
+
+        if (!isChromeBrowser()) {
+            alert("هذا الموقع متاح فقط على متصفح Google Chrome.");
+            document.body.innerHTML = `
+                <div style="display: flex; justify-content: center; align-items: center; height: 27vh; text-align: center; font-family: Arial, sans-serif; background-color: #333;">
+                    <div style="border: 2px solid #f44336; padding: 20px; border-radius: 8px;">
+                        <h2 style="color: white;">تنبيه!</h2>
+                        <p style="font-size: 18px; color: white;">هذا الموقع متاح فقط على متصفح <strong>جوجل كروم</strong>.</p>
+                    </div>
+                </div>
+            `;
+            throw new Error("Non-Chrome browser detected, stopping script execution.");
+        }
+
+        let registrationOpenTime = new Date("2024-11-11T04:06:00");
+        let registrationCloseTime = new Date("2024-11-15T04:59:00");
+
+        function canRegister() {
+            const currentTime = new Date();
+            return currentTime >= registrationOpenTime && currentTime <= registrationCloseTime;
+        }
+
+        function checkSubmission() {    
+            const lastSubmissionTime = localStorage.getItem('submissionTime');
+            const currentTime = new Date().getTime();
+
+            if (lastSubmissionTime && lastSubmissionTime < registrationOpenTime.getTime()) {
+                localStorage.removeItem('submissionTime');
+            }
+
+            const updatedLastSubmissionTime = localStorage.getItem('submissionTime');
+
+            if (updatedLastSubmissionTime || !canRegister()) {
+                document.getElementById('getLocationBtn').disabled = true;
+                document.getElementById('getLocationBtn').innerText = "التسجيل غير مسموح به!";
+                return;
+            }
+        }
+
+        checkSubmission();
+
+        document.getElementById('getLocationBtn').addEventListener('click', function() {
+            const button = document.getElementById('getLocationBtn');
+            button.disabled = true; 
+            button.innerText = "جاري الإرسال...";
+
+            if (!canRegister()) {
+                alert("التسجيل غير مسموح به قبل أو بعد الوقت المحدد.");
+                button.disabled = false;
+                button.innerText = "Submit";
+                return;
+            }
+
+            const Name = document.getElementById('Name').value;
+            
+            if (Name.trim() === "") {
+                alert("يرجى إدخال الاسم.");
+                button.disabled = false;
+                button.innerText = "Submit";
+                return;
+            }
+
+            // الحصول على Fingerprint
+            FingerprintJS.load().then(fp => fp.get()).then(result => {
+                const fingerprint = result.visitorId;
+
+                // إعداد البيانات للإرسال
+                const data = {
+                    data: [
+                        {
+                            Name: Name,
+                            fingerprint: fingerprint
+                        }
+                    ]
+                };
+
+                // إرسال البيانات إلى Google Sheets عبر SheetDB API
+                fetch("https://sheetdb.io/api/v1/x9zd5d8em7q7d", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Name and Fingerprint submitted successfully:", data);
+                    alert("تم إرسال البيانات بنجاح!");
+                    localStorage.setItem('submissionTime', new Date().getTime());
+                    button.disabled = true;
+                    button.innerText = "لقد أرسلت البيانات بالفعل!";
+                })
+                .catch(error => {
+                    console.error("Error:", error);
+                    alert("حدث خطأ أثناء إرسال البيانات.");
+                    button.disabled = false;
+                    button.innerText = "Submit";
+                });
+            });
+        });
+    </script>
+</body>
+</html>
