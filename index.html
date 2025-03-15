@@ -10,12 +10,12 @@
     <div class="form">
         <img src="logo.png" alt="Logo" style="display: block; margin: 0 auto 20px; width: 200px;">
         <div class="input-container ic1">
-            <input id="price" class="input" type="number" placeholder=" " />
+            <input id="price" class="input" type="text" placeholder=" " oninput="formatNumber(this)" />
             <div class="cut"></div>
             <label for="price" class="placeholder">سعر السيارة</label>
         </div>
         <div class="input-container ic2">
-            <input id="downPayment" class="input" type="number" placeholder=" " />
+            <input id="downPayment" class="input" type="text" placeholder=" " oninput="formatNumber(this)" />
             <div class="cut cut-short"></div>
             <label for="downPayment" class="placeholder">المقدم</label>
         </div>
@@ -35,9 +35,16 @@
     </div>
     
     <script>
+        function formatNumber(input) {
+            let value = input.value.replace(/,/g, '');
+            if (!isNaN(value) && value !== '') {
+                input.value = parseFloat(value).toLocaleString();
+            }
+        }
+
         function calculateInstallment() {
-            let price = parseFloat(document.getElementById('price').value);
-            let downPayment = parseFloat(document.getElementById('downPayment').value);
+            let price = parseFloat(document.getElementById('price').value.replace(/,/g, ''));
+            let downPayment = parseFloat(document.getElementById('downPayment').value.replace(/,/g, ''));
             let interestRate = parseFloat(document.getElementById('interestRate').value) / 100;
             let years = parseFloat(document.getElementById('years').value);
             
@@ -46,8 +53,8 @@
             let totalInstallment = remainingAmount + interestAmount;
             let monthlyInstallment = totalInstallment / (years * 12);
             
-            document.getElementById('totalInstallment').innerText = `القسط الكلي: ${totalInstallment.toFixed(2)} جنيه`;
-            document.getElementById('monthlyInstallment').innerText = `القسط الشهري: ${monthlyInstallment.toFixed(2)} جنيه`;
+            document.getElementById('totalInstallment').innerText = `القسط الكلي: ${totalInstallment.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} جنيه`;
+            document.getElementById('monthlyInstallment').innerText = `القسط الشهري: ${monthlyInstallment.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} جنيه`;
         }
     </script>
 </body>
