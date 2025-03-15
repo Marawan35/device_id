@@ -1,146 +1,54 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Define permissions</title>
+    <title>حاسبة قسط السيارة</title>
     <link rel="stylesheet" href="css.css"> 
 </head>
 <body>
     <div class="form">
-        <div class="title">Welcome</div>
+        <img src="logo.png" alt="Logo" style="display: block; margin: 0 auto 20px; width: 200px;">
         <div class="input-container ic1">
-            <input id="Name" class="input" type="text" placeholder=" " />
+            <input id="price" class="input" type="number" placeholder=" " />
             <div class="cut"></div>
-            <label for="Name" class="placeholder">Name</label>
+            <label for="price" class="placeholder">سعر السيارة</label>
         </div>
-        <button id="getLocationBtn" class="submit">Submit</button>
+        <div class="input-container ic2">
+            <input id="downPayment" class="input" type="number" placeholder=" " />
+            <div class="cut cut-short"></div>
+            <label for="downPayment" class="placeholder">المقدم</label>
+        </div>
+        <div class="input-container ic2">
+            <input id="interestRate" class="input" type="number" placeholder=" " />
+            <div class="cut cut-short2"></div>
+            <label for="interestRate" class="placeholder">نسبة الفائدة (%)</label>
+        </div>
+        <div class="input-container ic2">
+            <input id="years" class="input" type="number" placeholder=" " />
+            <div class="cut cut-short1"></div>
+            <label for="years" class="placeholder">عدد السنين</label>
+        </div>
+        <button class="submit" onclick="calculateInstallment()">احسب</button>
+        <h3 id="totalInstallment" class="subtitle"></h3>
+        <h3 id="monthlyInstallment" class="subtitle"></h3>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
+    
     <script>
-        function isChromeBrowser() {
-            if (navigator.userAgentData) {
-                const brands = navigator.userAgentData.brands;
-                return brands.some(brand => brand.brand === 'Google Chrome');
-            } else {
-                const userAgent = navigator.userAgent.toLowerCase();
-                return (
-                    userAgent.includes('chrome') && 
-    !userAgent.includes('edg') && 
-    !userAgent.includes('opr') && 
-    !userAgent.includes('brave') && 
-    !userAgent.includes('firefox') && 
-    !userAgent.includes('vivaldi') && 
-    !userAgent.includes('ucbrowser') && 
-    !userAgent.includes('duckduckgo') && 
-    !userAgent.includes('yabrowser') && 
-    !userAgent.includes('whale') ||
-    userAgent.includes('huawei') || // السماح لمتصفح هواوي
-    (userAgent.includes('safari') && userAgent.includes('mobile')) // السماح لمتصفح آيفون
-);
-            }
-        }
-
-        if (!isChromeBrowser()) {
-            alert("هذا الموقع متاح فقط على متصفح Google Chrome.");
-            document.body.innerHTML = `
-                <div style="display: flex; justify-content: center; align-items: center; height: 27vh; text-align: center; font-family: Arial, sans-serif; background-color: #333;">
-                    <div style="border: 2px solid #f44336; padding: 20px; border-radius: 8px;">
-                        <h2 style="color: white;">تنبيه!</h2>
-                        <p style="font-size: 18px; color: white;">هذا الموقع متاح فقط على متصفح <strong>جوجل كروم</strong>.</p>
-                    </div>
-                </div>
-            `;
-            throw new Error("Non-Chrome browser detected, stopping script execution.");
-        }
-
-        let registrationOpenTime = new Date("2024-11-11T04:02:00");
-        let registrationCloseTime = new Date("2024-11-15T04:59:00");
-
-        function canRegister() {
-            const currentTime = new Date();
-            return currentTime >= registrationOpenTime && currentTime <= registrationCloseTime;
-        }
-
-        function checkSubmission() {    
-            const lastSubmissionTime = localStorage.getItem('submissionTime');
-            const currentTime = new Date().getTime();
-
-            if (lastSubmissionTime && lastSubmissionTime < registrationOpenTime.getTime()) {
-                localStorage.removeItem('submissionTime');
-            }
-
-            const updatedLastSubmissionTime = localStorage.getItem('submissionTime');
-
-            if (updatedLastSubmissionTime || !canRegister()) {
-                document.getElementById('getLocationBtn').disabled = true;
-                document.getElementById('getLocationBtn').innerText = "التسجيل غير مسموح به!";
-                return;
-            }
-        }
-
-        checkSubmission();
-
-        document.getElementById('getLocationBtn').addEventListener('click', function() {
-            const button = document.getElementById('getLocationBtn');
-            button.disabled = true; 
-            button.innerText = "جاري الإرسال...";
-
-            if (!canRegister()) {
-                alert("التسجيل غير مسموح به قبل أو بعد الوقت المحدد.");
-                button.disabled = false;
-                button.innerText = "Submit";
-                return;
-            }
-
-            const Name = document.getElementById('Name').value;
+        function calculateInstallment() {
+            let price = parseFloat(document.getElementById('price').value);
+            let downPayment = parseFloat(document.getElementById('downPayment').value);
+            let interestRate = parseFloat(document.getElementById('interestRate').value) / 100;
+            let years = parseFloat(document.getElementById('years').value);
             
-            if (Name.trim() === "") {
-                alert("يرجى إدخال الاسم.");
-                button.disabled = false;
-                button.innerText = "Submit";
-                return;
-            }
-
-            // الحصول على Fingerprint
-            FingerprintJS.load().then(fp => fp.get()).then(result => {
-                const fingerprint = result.visitorId;
-
-                // إعداد البيانات للإرسال
-                const data = {
-                    data: [
-                        {
-                            Name: Name,
-                            fingerprint: fingerprint
-                        }
-                    ]
-                };
-
-                // إرسال البيانات إلى Google Sheets عبر SheetDB API
-                fetch("https://sheetdb.io/api/v1/x9zd5d8em7q7d", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify(data)
-                })
-                .then(response => response.json())
-                .then(data => {
-                    console.log("Name and Fingerprint submitted successfully:", data);
-                    alert("تم إرسال البيانات بنجاح!");
-                    localStorage.setItem('submissionTime', new Date().getTime());
-                    button.disabled = true;
-                    button.innerText = "لقد أرسلت البيانات بالفعل!";
-                })
-                .catch(error => {
-                    console.error("Error:", error);
-                    alert("حدث خطأ أثناء إرسال البيانات.");
-                    button.disabled = false;
-                    button.innerText = "Submit";
-                });
-            });
-        });
+            let remainingAmount = price - downPayment;
+            let interestAmount = remainingAmount * interestRate * years;
+            let totalInstallment = remainingAmount + interestAmount;
+            let monthlyInstallment = totalInstallment / (years * 12);
+            
+            document.getElementById('totalInstallment').innerText = `القسط الكلي: ${totalInstallment.toFixed(2)} جنيه`;
+            document.getElementById('monthlyInstallment').innerText = `القسط الشهري: ${monthlyInstallment.toFixed(2)} جنيه`;
+        }
     </script>
 </body>
 </html>
